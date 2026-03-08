@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zero Pay — One-Click Micropayment Widget</title>
+<meta name="description" content="Add micropayment paywalls to any website with two lines of code. Users pay with one click, agents pay automatically.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0a;
+  --card: #0f0f0f;
+  --border: #1a1a1a;
+  --green: #00ff41;
+  --green-dim: #00cc33;
+  --green-glow: rgba(0, 255, 65, 0.15);
+  --cyan: #00d4ff;
+  --amber: #ffb000;
+  --red: #ff3333;
+  --text: #c0c0c0;
+  --dim: #606060;
+  --white: #e0e0e0;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,65,0.015) 2px, rgba(0,255,65,0.015) 4px);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(0,255,65,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,65,0.015) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+a { color: var(--cyan); text-decoration: none; }
+a:hover { color: var(--green); }
+
+/* ── Nav ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  background: rgba(10,10,10,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.logo {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--green);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.logo span { color: var(--dim); font-weight: 300; }
+.nav-label {
+  background: rgba(255,176,0,0.1);
+  color: var(--amber);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border: 1px solid rgba(255,176,0,0.25);
+  border-radius: 3px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-left: 12px;
+}
+.nav-links {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+}
+.nav-links a {
+  color: var(--dim);
+  font-size: 0.8rem;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--green); }
+
+/* ── Container ── */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ── Hero ── */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 120px 24px 80px;
+  position: relative;
+}
+.hero-glow {
+  position: absolute;
+  top: 30%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(0,255,65,0.04) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+.hero-content { max-width: 800px; }
+.tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  color: var(--amber);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  border: 1px solid rgba(255,176,0,0.3);
+  padding: 4px 12px;
+  border-radius: 2px;
+}
+.hero h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 24px;
+  animation: flicker 8s infinite;
+}
+.hero h1 .z { color: var(--green); text-shadow: 0 0 30px var(--green-glow), 0 0 60px var(--green-glow); }
+.hero-subtitle {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.15rem;
+  color: var(--text);
+  max-width: 600px;
+  margin: 0 auto 2rem;
+  line-height: 1.7;
+}
+.hero-desc {
+  font-size: 0.85rem;
+  color: var(--dim);
+  max-width: 640px;
+  margin: 0 auto 3rem;
+  line-height: 1.8;
+}
+.hero-code {
+  display: inline-block;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 20px 28px;
+  text-align: left;
+  font-size: 0.82rem;
+  max-width: 580px;
+  width: 100%;
+}
+.hero-code .cm { color: var(--dim); font-style: italic; }
+.hero-code .tg { color: var(--cyan); }
+.hero-code .at { color: var(--amber); }
+.hero-code .st { color: var(--green); }
+
+/* ── Sections ── */
+section { padding: 80px 0; }
+.section-label {
+  font-size: 0.65rem;
+  color: var(--amber);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.section-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 2rem;
+  color: var(--white);
+  margin-bottom: 16px;
+}
+.section-desc {
+  color: var(--text);
+  max-width: 600px;
+  margin-bottom: 48px;
+  font-size: 0.9rem;
+}
+
+/* ── Live Demo ── */
+.demo-container {
+  max-width: 700px;
+  margin: 0 auto;
+  position: relative;
+}
+.demo-article {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.demo-article-header {
+  padding: 32px 32px 0;
+}
+.demo-article-header .source {
+  font-size: 0.7rem;
+  color: var(--amber);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.demo-article-header h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.4rem;
+  color: var(--white);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.demo-article-header .meta {
+  font-size: 0.75rem;
+  color: var(--dim);
+  margin-bottom: 16px;
+}
+.demo-article-preview {
+  padding: 0 32px;
+  font-size: 0.85rem;
+  line-height: 1.8;
+  color: var(--text);
+}
+.demo-article-preview p { margin-bottom: 16px; }
+.demo-paywall-zone {
+  position: relative;
+  min-height: 300px;
+}
+.demo-blurred {
+  padding: 0 32px 32px;
+  font-size: 0.85rem;
+  line-height: 1.8;
+  color: var(--text);
+  filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
+  transition: filter 0.8s ease, opacity 0.4s;
+}
+.demo-blurred.unlocked {
+  filter: none;
+  user-select: auto;
+  pointer-events: auto;
+}
+.demo-blurred p { margin-bottom: 16px; }
+.demo-paywall-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to bottom, rgba(10,10,10,0) 0%, rgba(10,10,10,0.95) 40%);
+  z-index: 10;
+  transition: opacity 0.5s;
+}
+.demo-paywall-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.pay-widget {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 24px 32px;
+  text-align: center;
+  max-width: 320px;
+  width: 100%;
+}
+.pay-widget .pw-label {
+  font-size: 0.7rem;
+  color: var(--dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.pay-widget .pw-amount {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.5rem;
+  color: var(--white);
+  margin-bottom: 4px;
+}
+.pay-widget .pw-amount .pw-z { color: var(--green); }
+.pay-widget .pw-usd {
+  font-size: 0.8rem;
+  color: var(--dim);
+  margin-bottom: 20px;
+}
+.pay-btn {
+  display: block;
+  width: 100%;
+  padding: 14px 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid var(--green);
+  color: var(--green);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+}
+.pay-btn:hover {
+  background: var(--green);
+  color: var(--bg);
+  box-shadow: 0 0 20px var(--green-glow);
+}
+.pay-btn.processing {
+  border-color: var(--amber);
+  color: var(--amber);
+  cursor: wait;
+}
+.pay-btn.success {
+  border-color: var(--green);
+  background: var(--green);
+  color: var(--bg);
+}
+.pay-widget .pw-secure {
+  font-size: 0.65rem;
+  color: var(--dim);
+  margin-top: 12px;
+  opacity: 0.6;
+}
+.demo-reset {
+  display: block;
+  margin: 16px auto 0;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  padding: 6px 16px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+.demo-reset:hover { border-color: var(--dim); color: var(--text); }
+.demo-receipt {
+  background: var(--card);
+  border: 1px solid rgba(0,255,65,0.2);
+  border-radius: 4px;
+  padding: 16px 24px;
+  margin-top: 16px;
+  font-size: 0.75rem;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  display: none;
+}
+.demo-receipt.show { display: block; }
+.demo-receipt .receipt-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+.demo-receipt .receipt-label { color: var(--dim); }
+.demo-receipt .receipt-value { color: var(--text); }
+.demo-receipt .receipt-value.green { color: var(--green); }
+
+/* ── How It Works ── */
+.how-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.how-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 28px;
+  text-align: center;
+  transition: border-color 0.3s;
+}
+.how-card:hover { border-color: var(--green); }
+.how-num {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0 auto 16px;
+}
+.how-num.n1 { background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); color: var(--cyan); }
+.how-num.n2 { background: rgba(255,176,0,0.1); border: 1px solid rgba(255,176,0,0.3); color: var(--amber); }
+.how-num.n3 { background: rgba(0,255,65,0.1); border: 1px solid rgba(0,255,65,0.3); color: var(--green); }
+.how-card h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  color: var(--white);
+  margin-bottom: 8px;
+}
+.how-card p {
+  font-size: 0.82rem;
+  color: var(--dim);
+  line-height: 1.7;
+}
+
+/* ── Flows ── */
+.flows-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.flow-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 28px;
+}
+.flow-card h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  color: var(--white);
+  margin-bottom: 4px;
+}
+.flow-card .flow-sub {
+  font-size: 0.75rem;
+  color: var(--dim);
+  margin-bottom: 20px;
+}
+.flow-step {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: flex-start;
+}
+.flow-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+.flow-dot.cyan { background: var(--cyan); }
+.flow-dot.amber { background: var(--amber); }
+.flow-dot.green { background: var(--green); }
+.flow-dot.red { background: var(--red); }
+.flow-step-text {
+  font-size: 0.82rem;
+  color: var(--text);
+}
+.flow-step-text .arrow {
+  color: var(--dim);
+  font-size: 0.75rem;
+}
+
+/* ── Integration Code ── */
+.code-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 0;
+}
+.code-tab {
+  padding: 10px 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--dim);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+}
+.code-tab:first-child { border-radius: 4px 0 0 0; }
+.code-tab:last-child { border-radius: 0 4px 0 0; }
+.code-tab.active {
+  color: var(--green);
+  background: #080808;
+  border-color: var(--border);
+  border-bottom-color: #080808;
+}
+.code-panel {
+  display: none;
+  background: #080808;
+  border: 1px solid var(--border);
+  border-radius: 0 4px 4px 4px;
+  padding: 24px;
+  font-size: 0.82rem;
+  line-height: 1.7;
+  overflow-x: auto;
+}
+.code-panel.active { display: block; }
+.code-panel pre { white-space: pre; }
+.kw { color: var(--cyan); }
+.fn { color: var(--amber); }
+.st { color: var(--green); }
+.nu { color: var(--red); }
+.cm { color: var(--dim); font-style: italic; }
+.op { color: #888; }
+.dc { color: var(--cyan); opacity: 0.7; }
+.pr { color: #e0e0e0; }
+.tg { color: var(--cyan); }
+.at { color: var(--amber); }
+
+/* ── Widget Options ── */
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+.option-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 24px;
+}
+.option-card h4 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.95rem;
+  color: var(--white);
+  margin-bottom: 12px;
+}
+.option-card p {
+  font-size: 0.82rem;
+  color: var(--dim);
+  margin-bottom: 12px;
+  line-height: 1.7;
+}
+.option-card code {
+  display: block;
+  background: rgba(0,255,65,0.06);
+  border: 1px solid rgba(0,255,65,0.12);
+  padding: 8px 12px;
+  border-radius: 3px;
+  font-size: 0.78rem;
+  color: var(--green);
+  overflow-x: auto;
+}
+
+/* ── Comparison Table ── */
+.table-wrap { overflow-x: auto; margin-bottom: 1.5rem; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+thead { border-bottom: 2px solid var(--border); }
+th {
+  text-align: left;
+  padding: 14px 18px;
+  color: var(--dim);
+  font-weight: 500;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: rgba(0,255,65,0.03);
+}
+td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+tr:hover td { background: rgba(0,255,65,0.02); }
+.highlight-row td { color: var(--green); font-weight: 500; }
+.dim-val { color: var(--dim); }
+.green-val { color: var(--green); font-weight: 600; }
+.red-val { color: var(--red); }
+.amber-val { color: var(--amber); }
+
+/* ── Calculator ── */
+.calc-container {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 32px;
+  max-width: 700px;
+}
+.calc-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.calc-row label {
+  font-size: 0.82rem;
+  color: var(--text);
+  min-width: 160px;
+}
+.calc-row input, .calc-row select {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 10px 14px;
+  color: var(--white);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+}
+.calc-row input:focus, .calc-row select:focus {
+  outline: none;
+  border-color: var(--green);
+}
+.calc-row select { cursor: pointer; }
+.calc-row select option { background: var(--bg); }
+.calc-results {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  margin-top: 20px;
+}
+.calc-result-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 0.85rem;
+}
+.calc-result-label { color: var(--dim); }
+.calc-result-value { color: var(--white); font-weight: 500; }
+.calc-result-value.green { color: var(--green); }
+.calc-result-value.amber { color: var(--amber); }
+
+/* ── FAQ ── */
+.faq-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.faq-q {
+  padding: 18px 24px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.95rem;
+  color: var(--white);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: color 0.2s;
+}
+.faq-q:hover { color: var(--green); }
+.faq-q .faq-toggle {
+  color: var(--dim);
+  font-size: 0.8rem;
+  transition: transform 0.3s;
+}
+.faq-q.open .faq-toggle { transform: rotate(45deg); }
+.faq-a {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.faq-a-inner {
+  padding: 0 24px 18px;
+  font-size: 0.85rem;
+  color: var(--dim);
+  line-height: 1.8;
+}
+.faq-a-inner code {
+  background: rgba(0,255,65,0.06);
+  border: 1px solid rgba(0,255,65,0.12);
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+  font-size: 0.9em;
+  color: var(--green);
+}
+
+/* ── Footer ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 40px 0;
+  text-align: center;
+}
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.footer-links a {
+  color: var(--dim);
+  font-size: 0.8rem;
+  transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--green); }
+.footer-copy { font-size: 0.7rem; color: var(--dim); opacity: 0.6; }
+
+/* ── Animations ── */
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.8; }
+  94% { opacity: 1; }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,255,65,0.4); }
+  50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(0,255,65,0); }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate { animation: fadeInUp 0.6s ease forwards; opacity: 0; }
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .hero { padding: 100px 16px 60px; }
+  .hero h1 { font-size: 2.2rem; }
+  .how-grid { grid-template-columns: 1fr; }
+  .flows-grid { grid-template-columns: 1fr; }
+  .options-grid { grid-template-columns: 1fr; }
+  .calc-row { flex-direction: column; align-items: stretch; }
+  .calc-row label { min-width: auto; }
+  section { padding: 60px 0; }
+  .demo-article-header { padding: 20px 20px 0; }
+  .demo-article-preview { padding: 0 20px; }
+  .demo-blurred { padding: 0 20px 20px; }
+  .pay-widget { padding: 20px; }
+  table { font-size: 0.72rem; }
+  th, td { padding: 10px 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-inner">
+    <div style="display:flex;align-items:center;">
+      <a href="https://pay.zzero.net" class="logo">ZERO <span>pay</span></a>
+      <span class="nav-label">Widget SDK</span>
+    </div>
+    <div class="nav-links">
+      <a href="#demo">Demo</a>
+      <a href="#integrate">Integrate</a>
+      <a href="#compare">Compare</a>
+      <a href="#calculator">Calculator</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://zzero.net">Main</a>
+      <a href="https://docs.zzero.net">Docs</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="tag">Payment Widget</div>
+    <h1><span class="z">Zero</span> Pay</h1>
+    <p class="hero-subtitle">Add micropayment paywalls to any website with two lines of code.</p>
+    <p class="hero-desc">Users click once to unlock content. AI agents pay automatically via x402. No accounts, no forms, no card numbers. Just value exchange at the speed of the web.</p>
+    <div class="hero-code">
+      <span class="cm">&lt;!-- Add to any page --&gt;</span><br>
+      <span class="tg">&lt;script</span> <span class="at">src</span>=<span class="st">"https://pay.zzero.net/widget.js"</span><span class="tg">&gt;&lt;/script&gt;</span><br>
+      <span class="tg">&lt;div</span> <span class="at">data-z-pay</span>=<span class="st">"5"</span> <span class="at">data-z-to</span>=<span class="st">"zr_your_address"</span><span class="tg">&gt;&lt;/div&gt;</span>
+    </div>
+  </div>
+</section>
+
+<!-- Live Demo -->
+<section id="demo">
+  <div class="container">
+    <div class="section-label">01 &mdash; Try It</div>
+    <div class="section-title">Live Demo</div>
+    <p class="section-desc">Click the pay button to unlock the article. This is exactly what your users will see.</p>
+
+    <div class="demo-container">
+      <div class="demo-article">
+        <div class="demo-article-header">
+          <div class="source">Tech Analysis</div>
+          <h3>How Block-Lattice Architecture Eliminates Bottlenecks</h3>
+          <div class="meta">March 2026 &bull; 8 min read &bull; by Zero Research</div>
+        </div>
+        <div class="demo-article-preview">
+          <p>Traditional blockchains force every transaction through a single chain, creating inherent throughput limitations. Block-lattice architecture takes a fundamentally different approach: each account maintains its own blockchain, enabling parallel transaction processing without global consensus bottlenecks.</p>
+        </div>
+        <div class="demo-paywall-zone">
+          <div class="demo-blurred" id="demo-content">
+            <p>The key insight is that most transactions are independent. When Alice sends to Bob, that transaction has no relationship to Carol sending to Dave. By giving each account its own chain, these transactions can be processed simultaneously across all available validators.</p>
+            <p>Zero takes this further with leaderless DAG-based asynchronous Byzantine Fault Tolerant consensus. Unlike leader-based systems where a single validator proposes blocks, every validator in Zero can process transactions concurrently. This eliminates the single point of failure and the throughput ceiling inherent in leader-based protocols.</p>
+            <p>The result is a network that scales with the number of validators rather than being bottlenecked by the slowest one. Each transaction is just 100 bytes &mdash; containing only the cryptographic essentials: sender, recipient, amount, and an Ed25519 signature. No smart contract bytecode, no state roots, no uncle blocks.</p>
+            <p>Combined with BLAKE3 hashing (which runs at 8 GB/s on modern hardware) and Ed25519 batch signature verification, Zero achieves sub-500ms finality while maintaining the security guarantees of traditional Byzantine consensus.</p>
+          </div>
+          <div class="demo-paywall-overlay" id="demo-overlay">
+            <div class="pay-widget">
+              <div class="pw-label">Unlock this article</div>
+              <div class="pw-amount"><span class="pw-z">5 Z</span></div>
+              <div class="pw-usd">$0.05 USD</div>
+              <button class="pay-btn" id="demo-pay-btn" onclick="demoPayment()">PAY &amp; UNLOCK</button>
+              <div class="pw-secure">Secured by Zero Network &bull; No account required</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="demo-reset" id="demo-reset" onclick="demoReset()" style="display:none">Reset demo</button>
+      <div class="demo-receipt" id="demo-receipt">
+        <div class="receipt-row"><span class="receipt-label">Status</span><span class="receipt-value green">Confirmed</span></div>
+        <div class="receipt-row"><span class="receipt-label">Amount</span><span class="receipt-value">5.00 Z ($0.05)</span></div>
+        <div class="receipt-row"><span class="receipt-label">Fee</span><span class="receipt-value">0.01 Z ($0.0001)</span></div>
+        <div class="receipt-row"><span class="receipt-label">TX Hash</span><span class="receipt-value" id="receipt-hash" style="color:var(--cyan);font-size:0.7rem">zr_...</span></div>
+        <div class="receipt-row"><span class="receipt-label">Finality</span><span class="receipt-value" id="receipt-finality">—</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How It Works -->
+<section id="how">
+  <div class="container">
+    <div class="section-label">02 &mdash; Flow</div>
+    <div class="section-title">How It Works</div>
+    <p class="section-desc">Three steps. No signups, no redirects, no waiting.</p>
+
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-num n1">1</div>
+        <h3>Publisher Adds Widget</h3>
+        <p>Two lines of HTML. Set the price and your Z address. The widget renders automatically &mdash; blurred content, pay button, and receipt.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-num n2">2</div>
+        <h3>User Clicks Pay</h3>
+        <p>One click sends the Z payment. No account creation, no card entry, no email. The transaction confirms in under 500ms.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-num n3">3</div>
+        <h3>Content Unlocks</h3>
+        <p>Payment is verified on-chain. The paywall drops, content is revealed, and a receipt is shown. Session tokens cache access for return visits.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Two Flows: Human + Agent -->
+<section>
+  <div class="container">
+    <div class="section-label">03 &mdash; Two Audiences</div>
+    <div class="section-title">Humans Click, Agents Auto-Pay</div>
+    <p class="section-desc">The same paywall works for browser users and AI agents. Different paths, same settlement.</p>
+
+    <div class="flows-grid">
+      <div class="flow-card">
+        <h3>Human Flow</h3>
+        <div class="flow-sub">Browser &bull; Widget UI &bull; One click</div>
+        <div class="flow-step"><div class="flow-dot cyan"></div><div class="flow-step-text">User visits paywalled page</div></div>
+        <div class="flow-step"><div class="flow-dot amber"></div><div class="flow-step-text">Widget shows blurred preview + price</div></div>
+        <div class="flow-step"><div class="flow-dot amber"></div><div class="flow-step-text">User clicks "Pay &amp; Unlock"</div></div>
+        <div class="flow-step"><div class="flow-dot green"></div><div class="flow-step-text">Payment confirms in &lt;500ms</div></div>
+        <div class="flow-step"><div class="flow-dot green"></div><div class="flow-step-text">Content revealed + receipt shown</div></div>
+        <div class="flow-step"><div class="flow-dot cyan"></div><div class="flow-step-text">Session token caches access for 24h</div></div>
+      </div>
+      <div class="flow-card">
+        <h3>Agent Flow</h3>
+        <div class="flow-sub">x402 Protocol &bull; Automatic &bull; Zero UI</div>
+        <div class="flow-step"><div class="flow-dot cyan"></div><div class="flow-step-text">Agent sends HTTP request to API</div></div>
+        <div class="flow-step"><div class="flow-dot red"></div><div class="flow-step-text">Server returns <code style="color:var(--amber);background:rgba(255,176,0,0.1);padding:2px 6px;border-radius:2px;font-size:0.78rem;">HTTP 402</code> + payment details</div></div>
+        <div class="flow-step"><div class="flow-dot amber"></div><div class="flow-step-text">Agent SDK auto-signs Z transfer</div></div>
+        <div class="flow-step"><div class="flow-dot amber"></div><div class="flow-step-text">Agent retries request with payment proof</div></div>
+        <div class="flow-step"><div class="flow-dot green"></div><div class="flow-step-text">Server verifies + returns resource</div></div>
+        <div class="flow-step"><div class="flow-dot green"></div><div class="flow-step-text">Spending limits enforced per policy</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Integration -->
+<section id="integrate">
+  <div class="container">
+    <div class="section-label">04 &mdash; Integrate</div>
+    <div class="section-title">Add to Your Stack</div>
+    <p class="section-desc">Copy-paste integration for any framework. Static HTML, Express, FastAPI, or MCP.</p>
+
+    <div class="code-tabs">
+      <button class="code-tab active" onclick="showTab('html')">HTML</button>
+      <button class="code-tab" onclick="showTab('express')">Express</button>
+      <button class="code-tab" onclick="showTab('fastapi')">FastAPI</button>
+      <button class="code-tab" onclick="showTab('mcp')">MCP</button>
+    </div>
+
+    <div class="code-panel active" id="tab-html">
+<pre><span class="cm">&lt;!-- 1. Add the widget script --&gt;</span>
+<span class="tg">&lt;script</span> <span class="at">src</span>=<span class="st">"https://pay.zzero.net/widget.js"</span><span class="tg">&gt;&lt;/script&gt;</span>
+
+<span class="cm">&lt;!-- 2. Wrap paywalled content --&gt;</span>
+<span class="tg">&lt;div</span> <span class="at">data-z-pay</span>=<span class="st">"5"</span>
+     <span class="at">data-z-to</span>=<span class="st">"zr_a1b2c3d4e5f6..."</span>
+     <span class="at">data-z-label</span>=<span class="st">"Unlock this article"</span><span class="tg">&gt;</span>
+
+  <span class="cm">&lt;!-- Your premium content here --&gt;</span>
+  <span class="tg">&lt;p&gt;</span>This content is only visible after payment.<span class="tg">&lt;/p&gt;</span>
+
+<span class="tg">&lt;/div&gt;</span>
+
+<span class="cm">&lt;!-- Optional: customize appearance --&gt;</span>
+<span class="tg">&lt;div</span> <span class="at">data-z-pay</span>=<span class="st">"10"</span>
+     <span class="at">data-z-to</span>=<span class="st">"zr_a1b2c3d4e5f6..."</span>
+     <span class="at">data-z-button</span>=<span class="st">"Read Full Report"</span>
+     <span class="at">data-z-session</span>=<span class="st">"24h"</span>
+     <span class="at">data-z-preview</span>=<span class="st">"3"</span><span class="tg">&gt;</span>
+  <span class="cm">&lt;!-- Shows first 3 paragraphs, blurs the rest --&gt;</span>
+<span class="tg">&lt;/div&gt;</span></pre>
+    </div>
+
+    <div class="code-panel" id="tab-express">
+<pre><span class="kw">const</span> express = <span class="fn">require</span>(<span class="st">'express'</span>);
+<span class="kw">const</span> { zeroPay } = <span class="fn">require</span>(<span class="st">'@zero-network/express'</span>);
+
+<span class="kw">const</span> app = <span class="fn">express</span>();
+
+<span class="cm">// Protect any route with a Z paywall</span>
+app.<span class="fn">get</span>(<span class="st">'/premium-article'</span>, <span class="fn">zeroPay</span>({
+  amount: <span class="nu">5</span>,           <span class="cm">// 5 Z ($0.05)</span>
+  to: <span class="st">'zr_your_address'</span>,
+  session: <span class="st">'24h'</span>,     <span class="cm">// Cache access for 24 hours</span>
+}), (req, res) => {
+  <span class="cm">// Only runs after payment is confirmed</span>
+  res.<span class="fn">json</span>({
+    title: <span class="st">'Premium Article'</span>,
+    content: <span class="st">'The full article content...'</span>,
+    receipt: req.zeroReceipt
+  });
+});
+
+<span class="cm">// x402: agents auto-pay, no widget needed</span>
+app.<span class="fn">get</span>(<span class="st">'/api/data'</span>, <span class="fn">zeroPay</span>({
+  amount: <span class="nu">1</span>,
+  to: <span class="st">'zr_your_address'</span>,
+  x402: <span class="kw">true</span>,         <span class="cm">// Enable HTTP 402 for agents</span>
+}), (req, res) => {
+  res.<span class="fn">json</span>({ data: <span class="st">'premium API data'</span> });
+});
+
+app.<span class="fn">listen</span>(<span class="nu">3000</span>);</pre>
+    </div>
+
+    <div class="code-panel" id="tab-fastapi">
+<pre><span class="kw">from</span> fastapi <span class="kw">import</span> FastAPI
+<span class="kw">from</span> zero_sdk <span class="kw">import</span> ZeroPaywall
+
+app = <span class="fn">FastAPI</span>()
+paywall = <span class="fn">ZeroPaywall</span>(to=<span class="st">"zr_your_address"</span>)
+
+<span class="dc">@app.get</span>(<span class="st">"/premium"</span>)
+<span class="dc">@paywall</span>(amount=<span class="nu">5</span>, session=<span class="st">"24h"</span>)
+<span class="kw">async def</span> <span class="fn">premium_content</span>(request):
+    <span class="kw">return</span> {
+        <span class="st">"title"</span>: <span class="st">"Premium Analysis"</span>,
+        <span class="st">"content"</span>: <span class="st">"Full content here..."</span>,
+        <span class="st">"receipt"</span>: request.state.zero_receipt
+    }
+
+<span class="cm"># API paywall with x402 for agents</span>
+<span class="dc">@app.get</span>(<span class="st">"/api/v1/data"</span>)
+<span class="dc">@paywall</span>(amount=<span class="nu">1</span>, x402=<span class="kw">True</span>)
+<span class="kw">async def</span> <span class="fn">api_data</span>(request):
+    <span class="kw">return</span> {<span class="st">"data"</span>: <span class="st">"premium data"</span>}
+
+<span class="cm"># Tiered pricing</span>
+<span class="dc">@app.get</span>(<span class="st">"/api/v1/report"</span>)
+<span class="dc">@paywall</span>(amount=<span class="nu">25</span>, x402=<span class="kw">True</span>)  <span class="cm"># 25 Z ($0.25) — max tx</span>
+<span class="kw">async def</span> <span class="fn">full_report</span>(request):
+    <span class="kw">return</span> {<span class="st">"report"</span>: <span class="st">"comprehensive analysis..."</span>}</pre>
+    </div>
+
+    <div class="code-panel" id="tab-mcp">
+<pre><span class="kw">from</span> mcp.server <span class="kw">import</span> FastMCP
+<span class="kw">from</span> zero_sdk <span class="kw">import</span> require_payment, verify_payment
+
+server = <span class="fn">FastMCP</span>(<span class="st">"My Paid Tools"</span>)
+
+<span class="dc">@server.tool</span>()
+<span class="kw">async def</span> <span class="fn">web_search</span>(query: <span class="pr">str</span>, payment_proof: <span class="pr">str</span> = <span class="kw">None</span>):
+    <span class="st">"""Search the web. Costs 0.10 Z ($0.001) per query."""</span>
+
+    <span class="cm"># Check payment</span>
+    <span class="kw">if not</span> payment_proof:
+        <span class="kw">return</span> <span class="fn">require_payment</span>(
+            amount=<span class="nu">0.10</span>,
+            to=<span class="st">"zr_your_address"</span>,
+            description=<span class="st">"Web search query"</span>
+        )
+
+    <span class="cm"># Verify and execute</span>
+    <span class="kw">if not</span> <span class="fn">verify_payment</span>(payment_proof, amount=<span class="nu">0.10</span>):
+        <span class="kw">return</span> {<span class="st">"error"</span>: <span class="st">"Invalid payment"</span>}
+
+    results = <span class="kw">await</span> <span class="fn">do_search</span>(query)
+    <span class="kw">return</span> {<span class="st">"results"</span>: results}
+
+<span class="cm"># Agent auto-pays via spending policy:</span>
+<span class="cm"># { "max_per_call": "1 Z", "max_per_session": "25 Z" }</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- Widget Options -->
+<section>
+  <div class="container">
+    <div class="section-label">05 &mdash; Customize</div>
+    <div class="section-title">Widget Options</div>
+    <p class="section-desc">Configure pricing, sessions, appearance, and callbacks via data attributes.</p>
+
+    <div class="options-grid">
+      <div class="option-card">
+        <h4>Price &amp; Address</h4>
+        <p>Set the amount in Z (1 Z = $0.01) and your receiving address.</p>
+        <code>data-z-pay="5" data-z-to="zr_..."</code>
+      </div>
+      <div class="option-card">
+        <h4>Session Caching</h4>
+        <p>Let users return without re-paying. Sessions are stored locally.</p>
+        <code>data-z-session="24h"</code>
+      </div>
+      <div class="option-card">
+        <h4>Preview Lines</h4>
+        <p>Show the first N paragraphs before the paywall. Default is 1.</p>
+        <code>data-z-preview="3"</code>
+      </div>
+      <div class="option-card">
+        <h4>Button Text</h4>
+        <p>Customize the pay button label for your content type.</p>
+        <code>data-z-button="Read Full Report"</code>
+      </div>
+      <div class="option-card">
+        <h4>Callback URL</h4>
+        <p>Webhook your server when a payment is confirmed.</p>
+        <code>data-z-callback="/api/verify"</code>
+      </div>
+      <div class="option-card">
+        <h4>Theme</h4>
+        <p>Match the widget to your site. Light, dark, or minimal.</p>
+        <code>data-z-theme="dark"</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Comparison -->
+<section id="compare">
+  <div class="container">
+    <div class="section-label">06 &mdash; Compare</div>
+    <div class="section-title">Why Not Stripe?</div>
+    <p class="section-desc">Traditional payment processors weren't built for $0.05 transactions.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Zero Pay</th>
+            <th>Stripe</th>
+            <th>Lightning</th>
+            <th>Solana Pay</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="highlight-row">
+            <td>Min viable payment</td>
+            <td class="green-val">$0.0002 (0.02 Z)</td>
+            <td class="red-val">$0.50 (fees eat it)</td>
+            <td>$0.001</td>
+            <td>$0.01</td>
+          </tr>
+          <tr>
+            <td>Fee on $0.05 tx</td>
+            <td class="green-val">$0.0001 (0.2%)</td>
+            <td class="red-val">$0.32 (640%)</td>
+            <td class="dim-val">~$0.001 (2%)</td>
+            <td class="dim-val">$0.002 (4%)</td>
+          </tr>
+          <tr>
+            <td>Settlement time</td>
+            <td class="green-val">&lt;500ms</td>
+            <td class="dim-val">2-7 days</td>
+            <td class="dim-val">~1 second</td>
+            <td class="dim-val">~400ms</td>
+          </tr>
+          <tr>
+            <td>User account required</td>
+            <td class="green-val">No</td>
+            <td class="red-val">Yes (card + email)</td>
+            <td class="amber-val">Wallet required</td>
+            <td class="amber-val">Wallet required</td>
+          </tr>
+          <tr>
+            <td>AI agent compatible</td>
+            <td class="green-val">Native (x402)</td>
+            <td class="red-val">No</td>
+            <td class="amber-val">Partial</td>
+            <td class="amber-val">Partial</td>
+          </tr>
+          <tr>
+            <td>Price stability</td>
+            <td class="green-val">1 Z = $0.01 (fixed)</td>
+            <td class="green-val">USD</td>
+            <td class="red-val">BTC (volatile)</td>
+            <td class="red-val">SOL (volatile)</td>
+          </tr>
+          <tr>
+            <td>Integration effort</td>
+            <td class="green-val">2 lines of HTML</td>
+            <td class="dim-val">Backend + frontend</td>
+            <td class="dim-val">Lightning node</td>
+            <td class="dim-val">SDK + wallet adapter</td>
+          </tr>
+          <tr>
+            <td>Chargebacks</td>
+            <td class="green-val">Impossible</td>
+            <td class="red-val">Yes (costly)</td>
+            <td class="green-val">No</td>
+            <td class="green-val">No</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Calculator -->
+<section id="calculator">
+  <div class="container">
+    <div class="section-label">07 &mdash; Revenue</div>
+    <div class="section-title">Revenue Calculator</div>
+    <p class="section-desc">See what micropayments could earn you.</p>
+
+    <div class="calc-container">
+      <div class="calc-row">
+        <label>Daily page views</label>
+        <input type="number" id="calc-views" value="1000" min="1" oninput="calcRevenue()">
+      </div>
+      <div class="calc-row">
+        <label>Conversion rate</label>
+        <select id="calc-rate" onchange="calcRevenue()">
+          <option value="0.02">2% (low — general content)</option>
+          <option value="0.05" selected>5% (medium — niche content)</option>
+          <option value="0.10">10% (high — premium/exclusive)</option>
+          <option value="0.20">20% (very high — must-read)</option>
+        </select>
+      </div>
+      <div class="calc-row">
+        <label>Price per unlock</label>
+        <select id="calc-price" onchange="calcRevenue()">
+          <option value="1">1 Z ($0.01)</option>
+          <option value="2">2 Z ($0.02)</option>
+          <option value="5" selected>5 Z ($0.05)</option>
+          <option value="10">10 Z ($0.10)</option>
+          <option value="25">25 Z ($0.25)</option>
+        </select>
+      </div>
+      <div class="calc-results">
+        <div class="calc-result-row">
+          <span class="calc-result-label">Daily paying users</span>
+          <span class="calc-result-value" id="calc-users">50</span>
+        </div>
+        <div class="calc-result-row">
+          <span class="calc-result-label">Daily revenue</span>
+          <span class="calc-result-value green" id="calc-daily">250 Z ($2.50)</span>
+        </div>
+        <div class="calc-result-row">
+          <span class="calc-result-label">Monthly revenue</span>
+          <span class="calc-result-value green" id="calc-monthly">7,500 Z ($75.00)</span>
+        </div>
+        <div class="calc-result-row">
+          <span class="calc-result-label">Annual revenue</span>
+          <span class="calc-result-value green" id="calc-annual">91,250 Z ($912.50)</span>
+        </div>
+        <div class="calc-result-row">
+          <span class="calc-result-label">Total fees paid</span>
+          <span class="calc-result-value amber" id="calc-fees">$0.50/mo (0.01 Z per tx)</span>
+        </div>
+        <div class="calc-result-row">
+          <span class="calc-result-label">vs. Stripe equivalent</span>
+          <span class="calc-result-value" id="calc-stripe" style="color:var(--red)">Not viable ($0.30+$0.02 min)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="container">
+    <div class="section-label">08 &mdash; FAQ</div>
+    <div class="section-title">Frequently Asked Questions</div>
+    <p class="section-desc" style="margin-bottom:32px">Everything you need to know about accepting Zero payments.</p>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">How do users get Z tokens?<span class="faq-toggle">+</span></div>
+      <div class="faq-a"><div class="faq-a-inner">Users bridge USDC or USDT to Z at a 1:1 rate ($0.01 per Z) through the Zero bridge. The process takes about 30 seconds. AI agents fund their wallets the same way, typically with automated top-ups when balance is low.</div></div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">What if a user doesn't have Z tokens?<span class="faq-toggle">+</span></div>
+      <div class="faq-a"><div class="faq-a-inner">The widget detects if the user has no Z balance and shows a "Get Z" link to the bridge. Future versions will support inline USDC-to-Z conversion, so users can pay with USDC directly and the widget handles the bridge automatically.</div></div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">What's the maximum transaction amount?<span class="faq-toggle">+</span></div>
+      <div class="faq-a"><div class="faq-a-inner">25 Z ($0.25) per transaction. Zero is designed for microtransactions. For larger amounts, use multiple transactions or traditional payment rails. The fee is always flat: 0.01 Z ($0.0001) per transaction regardless of amount.</div></div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Can users get refunds?<span class="faq-toggle">+</span></div>
+      <div class="faq-a"><div class="faq-a-inner">Zero transactions are final — there are no chargebacks. This is a feature, not a bug. For publishers, it eliminates chargeback fraud entirely. If you want to offer refunds, you can send Z back to the user's address programmatically from your server.</div></div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">How do I withdraw earnings to USD?<span class="faq-toggle">+</span></div>
+      <div class="faq-a"><div class="faq-a-inner">Bridge your Z back to USDC/USDT via the Zero bridge (same 1:1 rate, minus the 0.01 Z tx fee), then convert to USD through any exchange or on-ramp that supports USDC. The bridge process takes about 30 seconds.</div></div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Is the widget open source?<span class="faq-toggle">+</span></div>
+      <div class="faq-a"><div class="faq-a-inner">Yes. The widget, SDKs, and server middleware are all open source under the MIT license. You can self-host the widget script, modify the UI, or build your own payment flow using the SDK directly.</div></div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">How does session caching work?<span class="faq-toggle">+</span></div>
+      <div class="faq-a"><div class="faq-a-inner">After a successful payment, the widget stores a signed session token in the user's browser (localStorage). On return visits within the session window (configurable via <code>data-z-session</code>), the content is automatically unlocked without re-payment. The token is cryptographically signed so it can't be forged or transferred.</div></div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">What about ad blockers?<span class="faq-toggle">+</span></div>
+      <div class="faq-a"><div class="faq-a-inner">The widget is not an ad — it's a payment mechanism. It's not on any blocklists. If you self-host the widget script from your own domain, it's indistinguishable from your own JavaScript. For server-side paywalls (Express/FastAPI), the content is never sent to the browser until payment is verified, so there's nothing to block.</div></div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Can I use this for API endpoints?<span class="faq-toggle">+</span></div>
+      <div class="faq-a"><div class="faq-a-inner">Yes. The Express and FastAPI middleware returns HTTP 402 for unpaid requests. AI agents using the Zero SDK or any x402-compatible client will automatically detect the 402, pay, and retry — no human interaction needed. This is the primary use case for agent-to-service payments.</div></div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">What happens if the Zero network goes down?<span class="faq-toggle">+</span></div>
+      <div class="faq-a"><div class="faq-a-inner">The widget has a configurable fallback. You can set <code>data-z-fallback="open"</code> to show content for free during outages, or <code>data-z-fallback="closed"</code> to keep it locked. Session tokens still work offline since they're verified locally.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="https://zzero.net">Zero Network</a>
+      <a href="https://docs.zzero.net">Documentation</a>
+      <a href="https://explorer.zzero.net">Explorer</a>
+      <a href="https://mcp.zzero.net">MCP</a>
+      <a href="https://github.com/Zzero-net" target="_blank">GitHub</a>
+    </div>
+    <div class="footer-copy">&copy; 2026 Zero Network &mdash; Machine-native value transfer</div>
+  </div>
+</footer>
+
+<script>
+// ── Demo Payment ──
+function demoPayment() {
+  const btn = document.getElementById('demo-pay-btn');
+  const overlay = document.getElementById('demo-overlay');
+  const content = document.getElementById('demo-content');
+  const receipt = document.getElementById('demo-receipt');
+  const reset = document.getElementById('demo-reset');
+
+  btn.textContent = 'PROCESSING...';
+  btn.className = 'pay-btn processing';
+  btn.disabled = true;
+
+  const finality = Math.floor(Math.random() * 200) + 180;
+
+  setTimeout(() => {
+    btn.textContent = 'CONFIRMED';
+    btn.className = 'pay-btn success';
+
+    setTimeout(() => {
+      overlay.classList.add('hidden');
+      content.classList.add('unlocked');
+      reset.style.display = 'block';
+
+      // Show receipt
+      const hex = () => Math.floor(Math.random() * 16).toString(16);
+      const hash = 'zr_' + Array.from({length: 62}, hex).join('');
+      document.getElementById('receipt-hash').textContent = hash.slice(0, 12) + '...' + hash.slice(-8);
+      document.getElementById('receipt-finality').textContent = finality + 'ms';
+      receipt.classList.add('show');
+    }, 600);
+  }, 800 + Math.random() * 400);
+}
+
+function demoReset() {
+  const btn = document.getElementById('demo-pay-btn');
+  const overlay = document.getElementById('demo-overlay');
+  const content = document.getElementById('demo-content');
+  const receipt = document.getElementById('demo-receipt');
+  const reset = document.getElementById('demo-reset');
+
+  overlay.classList.remove('hidden');
+  content.classList.remove('unlocked');
+  receipt.classList.remove('show');
+  reset.style.display = 'none';
+  btn.textContent = 'PAY & UNLOCK';
+  btn.className = 'pay-btn';
+  btn.disabled = false;
+}
+
+// ── Code Tabs ──
+function showTab(id) {
+  document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.code-panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+}
+
+// ── Calculator ──
+function calcRevenue() {
+  const views = parseInt(document.getElementById('calc-views').value) || 0;
+  const rate = parseFloat(document.getElementById('calc-rate').value);
+  const price = parseInt(document.getElementById('calc-price').value);
+
+  const dailyUsers = Math.round(views * rate);
+  const dailyZ = dailyUsers * price;
+  const dailyUSD = dailyZ * 0.01;
+  const monthlyZ = dailyZ * 30;
+  const monthlyUSD = dailyUSD * 30;
+  const annualZ = dailyZ * 365;
+  const annualUSD = dailyUSD * 365;
+  const monthlyFees = dailyUsers * 30 * 0.01 * 0.01; // 0.01 Z fee * $0.01/Z
+
+  const fmt = (n) => n.toLocaleString('en-US');
+  const fmtUSD = (n) => n < 1 ? '$' + n.toFixed(4) : '$' + fmt(parseFloat(n.toFixed(2)));
+
+  document.getElementById('calc-users').textContent = fmt(dailyUsers);
+  document.getElementById('calc-daily').textContent = fmt(dailyZ) + ' Z (' + fmtUSD(dailyUSD) + ')';
+  document.getElementById('calc-monthly').textContent = fmt(monthlyZ) + ' Z (' + fmtUSD(monthlyUSD) + ')';
+  document.getElementById('calc-annual').textContent = fmt(annualZ) + ' Z (' + fmtUSD(annualUSD) + ')';
+  document.getElementById('calc-fees').textContent = fmtUSD(monthlyFees) + '/mo (0.01 Z per tx)';
+
+  // Stripe comparison
+  const stripeMinFee = 0.30 + (dailyUSD > 0 ? dailyUSD * 0.029 : 0);
+  if (price * 0.01 < 0.50) {
+    document.getElementById('calc-stripe').textContent = 'Not viable — Stripe min fee ($0.30) > payment (' + fmtUSD(price * 0.01) + ')';
+  } else {
+    const stripeFees = dailyUsers * 30 * (0.30 + price * 0.01 * 0.029);
+    document.getElementById('calc-stripe').textContent = 'Stripe would cost ' + fmtUSD(stripeFees) + '/mo in fees';
+  }
+}
+calcRevenue();
+
+// ── FAQ ──
+function toggleFaq(el) {
+  const answer = el.nextElementSibling;
+  const isOpen = el.classList.contains('open');
+
+  // Close all
+  document.querySelectorAll('.faq-q').forEach(q => {
+    q.classList.remove('open');
+    q.nextElementSibling.style.maxHeight = null;
+  });
+
+  if (!isOpen) {
+    el.classList.add('open');
+    answer.style.maxHeight = answer.scrollHeight + 'px';
+  }
+}
+
+// ── Smooth scroll ──
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+// ── Animate on scroll ──
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('animate');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.how-card, .flow-card, .option-card, .faq-item').forEach(el => {
+  observer.observe(el);
+});
+</script>
+</body>
+</html>
