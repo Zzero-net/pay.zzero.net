@@ -826,7 +826,7 @@ footer {
           <div class="demo-blurred" id="demo-content">
             <p>The key insight is that most transactions are independent. When Alice sends to Bob, that transaction has no relationship to Carol sending to Dave. By giving each account its own chain, these transactions can be processed simultaneously across all available validators.</p>
             <p>Zero takes this further with leaderless DAG-based asynchronous Byzantine Fault Tolerant consensus. Unlike leader-based systems where a single validator proposes blocks, every validator in Zero can process transactions concurrently. This eliminates the single point of failure and the throughput ceiling inherent in leader-based protocols.</p>
-            <p>The result is a network that scales with the number of validators rather than being bottlenecked by the slowest one. Each transaction is just 100 bytes &mdash; containing only the cryptographic essentials: sender, recipient, amount, and an Ed25519 signature. No smart contract bytecode, no state roots, no uncle blocks.</p>
+            <p>The result is a network that scales with the number of validators rather than being bottlenecked by the slowest one. Each transaction is just 136 bytes &mdash; containing only the cryptographic essentials: sender, recipient, amount, and an Ed25519 signature. No smart contract bytecode, no state roots, no uncle blocks.</p>
             <p>Combined with BLAKE3 hashing (which runs at 8 GB/s on modern hardware) and Ed25519 batch signature verification, Zero achieves sub-500ms finality while maintaining the security guarantees of traditional Byzantine consensus.</p>
           </div>
           <div class="demo-paywall-overlay" id="demo-overlay">
@@ -1254,7 +1254,7 @@ server = <span class="fn">FastMCP</span>(<span class="st">"My Paid Tools"</span>
 
     <div class="faq-item">
       <div class="faq-q" onclick="toggleFaq(this)">How do I withdraw earnings to USD?<span class="faq-toggle">+</span></div>
-      <div class="faq-a"><div class="faq-a-inner">Bridge your Z back to USDC/USDT via the Zero bridge (same 1:1 rate, minus the 0.01 Z tx fee), then convert to USD through any exchange or on-ramp that supports USDC. The bridge process takes about 30 seconds.</div></div>
+      <div class="faq-a"><div class="faq-a-inner">Bridge your Z back to USDC/USDT via the Zero bridge (same 1:1 rate, minus a 0.5 Z bridge-out fee), then convert to USD through any exchange or on-ramp that supports USDC. The bridge process takes about 30 seconds.</div></div>
     </div>
 
     <div class="faq-item">
